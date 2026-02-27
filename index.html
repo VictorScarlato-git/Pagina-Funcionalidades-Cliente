@@ -487,9 +487,7 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
   <script>
     // ── CONFIG ──
-    // Replace with your deployed Google Apps Script URL
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxHMUTef19ptL3Rc3yPx5HWbGlL9-gSAqmNgqP9Cy6ymI1ahvsRnFEERwAcdD8fPLg/exec';
-
     const PAGE_SIZE = 20;
 
     // ── STATE ──
@@ -532,6 +530,7 @@
     ];
 
     function badgeColor(category) {
+      if (!category) return BADGE_COLORS[0];
       let hash = 0;
       for (let i = 0; i < category.length; i++) {
         hash = category.charCodeAt(i) + ((hash << 5) - hash);
@@ -539,60 +538,120 @@
       return BADGE_COLORS[Math.abs(hash) % BADGE_COLORS.length];
     }
 
-    // ── FETCH ──
-    async function loadTutorials() {
-      if (!APPS_SCRIPT_URL) {
-        showDemoData();
-        return;
+    // ── DATA NORMALIZATION ──
+    const KEY_MAP = {
+      id: 'id', titulo: 'titulo', descricao: 'descricao',
+      categoria: 'categoria', datapublicacao: 'dataPublicacao',
+      pdfurl: 'pdfUrl', pdfdriveid: 'pdfDriveId',
+    };
+
+    function normalizeTutorial(raw) {
+      const t = {};
+      for (const [k, v] of Object.entries(raw)) {
+        const canonical = KEY_MAP[k.toLowerCase()] || k;
+        t[canonical] = String(v || '');
       }
+      if (t.pdfUrl && !t.pdfUrl.startsWith('http')) {
+        t.pdfUrl = 'https://drive.google.com/file/d/' + t.pdfUrl + '/view';
+      }
+      return t;
+    }
+
+    function parseDate(str) {
+      if (!str) return new Date(0);
+      return new Date(str);
+    }
+
+    function formatDate(str) {
+      if (!str) return '';
+      const d = new Date(str);
+      if (isNaN(d.getTime())) return str;
+      return d.toLocaleDateString('pt-BR');
+    }
+
+    // ── FETCH (JSONP for CORS compatibility with Google Apps Script) ──
+    function loadTutorials() {
+      if (!APPS_SCRIPT_URL) { showDemoData(); return; }
 
       showLoading();
-      try {
-        const res = await fetch(APPS_SCRIPT_URL);
-        const data = await res.json();
-        allTutorials = (data.tutoriais || []).sort(
-          (a, b) => new Date(b.dataPublicacao) - new Date(a.dataPublicacao)
-        );
-        filtered = [...allTutorials];
-        currentPage = 1;
-        render();
-      } catch {
-        showError();
+
+      const callbackName = '_gasCb' + Date.now();
+      const timeout = setTimeout(function() {
+        cleanup();
+        tryFetchFallback();
+      }, 8000);
+
+      function cleanup() {
+        clearTimeout(timeout);
+        delete window[callbackName];
+        var s = document.getElementById('gas-jsonp');
+        if (s) s.remove();
       }
+
+      window[callbackName] = function(data) {
+        cleanup();
+        processTutorials(data);
+      };
+
+      var script = document.createElement('script');
+      script.id = 'gas-jsonp';
+      script.src = APPS_SCRIPT_URL + '?callback=' + callbackName;
+      script.onerror = function() {
+        cleanup();
+        tryFetchFallback();
+      };
+      document.head.appendChild(script);
+    }
+
+    function tryFetchFallback() {
+      fetch(APPS_SCRIPT_URL)
+        .then(function(res) { return res.json(); })
+        .then(function(data) { processTutorials(data); })
+        .catch(function() { showError(); });
+    }
+
+    function processTutorials(data) {
+      var list = data.tutoriais || data.Tutoriais || [];
+      allTutorials = list.map(normalizeTutorial).sort(
+        function(a, b) { return parseDate(b.dataPublicacao) - parseDate(a.dataPublicacao); }
+      );
+      filtered = allTutorials.slice();
+      currentPage = 1;
+      render();
     }
 
     // ── DEMO DATA ──
     function showDemoData() {
-      const demos = [
-        { titulo: 'Como configurar o Checkout',              descricao: 'Aprenda a configurar o processo de pagamento na plataforma passo a passo.',                    categoria: 'Checkout',              dataPublicacao: '2026-02-15', pdfUrl: '#' },
-        { titulo: 'Personalização do White Label',           descricao: 'Tutorial completo sobre como personalizar cores, logo e domínio no White Label.',              categoria: 'White Label',           dataPublicacao: '2026-02-10', pdfUrl: '#' },
-        { titulo: 'Gestão de Reservas no Painel',            descricao: 'Como gerenciar reservas, cancelamentos e alterações pelo Painel Administrativo.',              categoria: 'Painel Administrativo', dataPublicacao: '2026-01-28', pdfUrl: '#' },
-        { titulo: 'Integração com a Travia',                 descricao: 'Passo a passo para configurar e utilizar a integração com a Travia.',                          categoria: 'Travia',                dataPublicacao: '2026-01-15', pdfUrl: '#' },
-        { titulo: 'Cupons de Desconto no Checkout',          descricao: 'Como criar e aplicar cupons de desconto no fluxo de Checkout.',                                categoria: 'Checkout',              dataPublicacao: '2025-12-20', pdfUrl: '#' },
-        { titulo: 'Relatórios do Painel Administrativo',     descricao: 'Como gerar e exportar relatórios de vendas pelo Painel Administrativo.',                       categoria: 'Painel Administrativo', dataPublicacao: '2025-12-05', pdfUrl: '#' },
+      var demos = [
+        { titulo: 'Como configurar o Checkout',          descricao: 'Aprenda a configurar o processo de pagamento na plataforma passo a passo.',               categoria: 'Checkout',              dataPublicacao: '2026-02-15', pdfUrl: '#' },
+        { titulo: 'Personalização do White Label',       descricao: 'Tutorial completo sobre como personalizar cores, logo e domínio no White Label.',         categoria: 'White Label',           dataPublicacao: '2026-02-10', pdfUrl: '#' },
+        { titulo: 'Gestão de Reservas no Painel',        descricao: 'Como gerenciar reservas, cancelamentos e alterações pelo Painel Administrativo.',         categoria: 'Painel Administrativo', dataPublicacao: '2026-01-28', pdfUrl: '#' },
+        { titulo: 'Integração com a Travia',             descricao: 'Passo a passo para configurar e utilizar a integração com a Travia.',                     categoria: 'Travia',                dataPublicacao: '2026-01-15', pdfUrl: '#' },
+        { titulo: 'Cupons de Desconto no Checkout',      descricao: 'Como criar e aplicar cupons de desconto no fluxo de Checkout.',                           categoria: 'Checkout',              dataPublicacao: '2025-12-20', pdfUrl: '#' },
+        { titulo: 'Relatórios do Painel Administrativo', descricao: 'Como gerar e exportar relatórios de vendas pelo Painel Administrativo.',                  categoria: 'Painel Administrativo', dataPublicacao: '2025-12-05', pdfUrl: '#' },
       ];
       allTutorials = demos;
-      filtered = [...allTutorials];
+      filtered = allTutorials.slice();
       currentPage = 1;
       render();
     }
 
     // ── FILTER ──
     function applyFilters() {
-      const query = searchInput.value.trim().toLowerCase();
-      const start = fpStart.selectedDates[0] || null;
-      const end   = fpEnd.selectedDates[0]   || null;
+      var query = searchInput.value.trim().toLowerCase();
+      var start = fpStart.selectedDates[0] || null;
+      var end   = fpEnd.selectedDates[0]   || null;
 
-      filtered = allTutorials.filter(t => {
+      filtered = allTutorials.filter(function(t) {
         if (query) {
-          const haystack = `${t.titulo} ${t.descricao} ${t.categoria}`.toLowerCase();
-          if (!haystack.includes(query)) return false;
+          var haystack = (t.titulo + ' ' + t.descricao + ' ' + t.categoria).toLowerCase();
+          if (haystack.indexOf(query) === -1) return false;
         }
         if (start || end) {
-          const d = new Date(t.dataPublicacao + 'T00:00:00');
+          var d = parseDate(t.dataPublicacao);
           if (start && d < start) return false;
-          if (end)   {
-            const endDay = new Date(end);
+          if (end) {
+            var endDay = new Date(end);
             endDay.setHours(23, 59, 59, 999);
             if (d > endDay) return false;
           }
@@ -609,30 +668,25 @@
       searchInput.value = '';
       fpStart.clear();
       fpEnd.clear();
-      filtered = [...allTutorials];
+      filtered = allTutorials.slice();
       currentPage = 1;
       render();
       updateClearBtn();
     }
 
     function updateClearBtn() {
-      const hasFilter = searchInput.value.trim() || fpStart.selectedDates.length || fpEnd.selectedDates.length;
+      var hasFilter = searchInput.value.trim() || fpStart.selectedDates.length || fpEnd.selectedDates.length;
       btnClear.classList.toggle('visible', !!hasFilter);
     }
 
     // ── RENDER ──
-    function formatDate(iso) {
-      const [y, m, d] = iso.split('-');
-      return `${d}/${m}/${y}`;
-    }
-
     function render() {
-      const total = filtered.length;
-      const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+      var total = filtered.length;
+      var totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
       if (currentPage > totalPages) currentPage = totalPages;
 
-      const start = (currentPage - 1) * PAGE_SIZE;
-      const page = filtered.slice(start, start + PAGE_SIZE);
+      var startIdx = (currentPage - 1) * PAGE_SIZE;
+      var page = filtered.slice(startIdx, startIdx + PAGE_SIZE);
 
       loadingState.style.display = 'none';
       errorState.style.display = 'none';
@@ -646,30 +700,29 @@
 
       emptyState.style.display = 'none';
       grid.style.display = 'grid';
-      grid.innerHTML = page.map(t => `
-        <a class="tutorial-card" href="${t.pdfUrl}" target="_blank" rel="noopener">
-          <div class="pdf-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"
-                 stroke-linecap="round" stroke-linejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-              <line x1="9" y1="15" x2="15" y2="15"/>
-            </svg>
-          </div>
-          <div class="card-body">
-            <div class="card-title">${t.titulo}</div>
-            <div class="card-desc">${t.descricao}</div>
-            <div class="card-meta">
-              <span class="badge" style="background:${badgeColor(t.categoria)}">${t.categoria}</span>
-              <span class="card-date">${formatDate(t.dataPublicacao)}</span>
-            </div>
-          </div>
-        </a>
-      `).join('');
+      grid.innerHTML = page.map(function(t) {
+        return '<a class="tutorial-card" href="' + t.pdfUrl + '" target="_blank" rel="noopener">' +
+          '<div class="pdf-icon">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+              '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>' +
+              '<polyline points="14 2 14 8 20 8"/>' +
+              '<line x1="9" y1="15" x2="15" y2="15"/>' +
+            '</svg>' +
+          '</div>' +
+          '<div class="card-body">' +
+            '<div class="card-title">' + t.titulo + '</div>' +
+            '<div class="card-desc">' + t.descricao + '</div>' +
+            '<div class="card-meta">' +
+              '<span class="badge" style="background:' + badgeColor(t.categoria) + '">' + t.categoria + '</span>' +
+              '<span class="card-date">' + formatDate(t.dataPublicacao) + '</span>' +
+            '</div>' +
+          '</div>' +
+        '</a>';
+      }).join('');
 
       if (totalPages > 1) {
         pagination.style.display = 'flex';
-        pageInfo.textContent = `Página ${currentPage} de ${totalPages}`;
+        pageInfo.textContent = 'Página ' + currentPage + ' de ' + totalPages;
         btnPrev.disabled = currentPage === 1;
         btnNext.disabled = currentPage === totalPages;
       } else {
@@ -696,9 +749,9 @@
     // ── EVENTS ──
     btnSearch.addEventListener('click', applyFilters);
     btnClear.addEventListener('click', clearFilters);
-    searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') applyFilters(); });
-    btnPrev.addEventListener('click', () => { if (currentPage > 1) { currentPage--; render(); } });
-    btnNext.addEventListener('click', () => { currentPage++; render(); });
+    searchInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') applyFilters(); });
+    btnPrev.addEventListener('click', function() { if (currentPage > 1) { currentPage--; render(); } });
+    btnNext.addEventListener('click', function() { currentPage++; render(); });
 
     // ── INIT ──
     loadTutorials();
