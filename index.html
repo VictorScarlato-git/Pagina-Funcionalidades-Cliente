@@ -569,17 +569,21 @@
       return d.toLocaleDateString('pt-BR');
     }
 
-    // ── FETCH (JSONP for CORS compatibility with Google Apps Script) ──
+    // ── FETCH ──
     function loadTutorials() {
       if (!APPS_SCRIPT_URL) { showDemoData(); return; }
 
       showLoading();
 
-      const callbackName = '_gasCb' + Date.now();
-      const timeout = setTimeout(function() {
-        cleanup();
-        tryFetchFallback();
-      }, 8000);
+      fetch(APPS_SCRIPT_URL)
+        .then(function(res) { return res.json(); })
+        .then(function(data) { processTutorials(data); })
+        .catch(function() { tryJsonpFallback(); });
+    }
+
+    function tryJsonpFallback() {
+      var callbackName = '_gasCb' + Date.now();
+      var timeout = setTimeout(function() { cleanup(); showError(); }, 8000);
 
       function cleanup() {
         clearTimeout(timeout);
@@ -596,18 +600,8 @@
       var script = document.createElement('script');
       script.id = 'gas-jsonp';
       script.src = APPS_SCRIPT_URL + '?callback=' + callbackName;
-      script.onerror = function() {
-        cleanup();
-        tryFetchFallback();
-      };
+      script.onerror = function() { cleanup(); showError(); };
       document.head.appendChild(script);
-    }
-
-    function tryFetchFallback() {
-      fetch(APPS_SCRIPT_URL)
-        .then(function(res) { return res.json(); })
-        .then(function(data) { processTutorials(data); })
-        .catch(function() { showError(); });
     }
 
     function processTutorials(data) {
