@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Publicar Tutorial</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: #f1f5f9;
+      color: #0f172a;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 0;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 660px;
+    }
+
+    .header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+
+    .header img {
+      height: 48px;
+      width: auto;
+    }
+
+    .header h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #0891b2;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 14px rgba(0, 0, 0, 0.04);
+      padding: 2.25rem 2rem;
+    }
+
+    .card p.intro {
+      font-size: 0.92rem;
+      color: #475569;
+      margin-bottom: 1.75rem;
+      border-left: 3px solid #00b4d8;
+      padding-left: 0.75rem;
+    }
+
+    .field {
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 0.35rem;
+      color: #1e293b;
+    }
+
+    label .required {
+      color: #ef4444;
+      margin-left: 2px;
+    }
+
+    .hint {
+      display: block;
+      font-size: 0.8rem;
+      color: #64748b;
+      margin-bottom: 0.4rem;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.92rem;
+      font-family: inherit;
+      color: #0f172a;
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #00b4d8;
+      box-shadow: 0 0 0 3px rgba(0, 180, 216, 0.15);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 90px;
+    }
+
+    select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8.825a.5.5 0 0 1-.354-.146l-4-4a.5.5 0 1 1 .708-.708L6 7.617l3.646-3.646a.5.5 0 1 1 .708.708l-4 4A.5.5 0 0 1 6 8.825z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      background-size: 12px;
+      padding-right: 2.25rem;
+    }
+
+    #outroContainer {
+      margin-top: 0.5rem;
+      display: none;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.92rem;
+      font-family: inherit;
+      color: #0f172a;
+      background: #ffffff;
+      border: 1.5px dashed #cbd5e1;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input[type="file"]:focus {
+      outline: none;
+      border-color: #00b4d8;
+      box-shadow: 0 0 0 3px rgba(0, 180, 216, 0.15);
+    }
+
+    input[type="file"]::file-selector-button {
+      padding: 0.4rem 1rem;
+      font-size: 0.85rem;
+      font-family: inherit;
+      font-weight: 600;
+      color: #0891b2;
+      background: #ecfeff;
+      border: 1.5px solid #00b4d8;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-right: 0.75rem;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    input[type="file"]::file-selector-button:hover {
+      background: #00b4d8;
+      color: #ffffff;
+    }
+
+    .actions {
+      margin-top: 2rem;
+      display: flex;
+      justify-content: center;
+    }
+
+    button[type="submit"] {
+      padding: 0.7rem 2rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      font-family: inherit;
+      color: #ffffff;
+      background: #00b4d8;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+
+    button[type="submit"]:hover {
+      background: #0891b2;
+    }
+
+    button[type="submit"]:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .field.invalid input,
+    .field.invalid select,
+    .field.invalid textarea {
+      border-color: #ef4444;
+    }
+
+    .field .error-msg {
+      display: none;
+      font-size: 0.8rem;
+      color: #ef4444;
+      margin-top: 0.3rem;
+    }
+
+    .field.invalid .error-msg {
+      display: block;
+    }
+
+    .success-message {
+      display: none;
+      text-align: center;
+      padding: 3rem 1.5rem;
+    }
+
+    .success-message svg {
+      width: 56px;
+      height: 56px;
+      margin-bottom: 1rem;
+    }
+
+    .success-message h2 {
+      font-size: 1.2rem;
+      color: #0891b2;
+      margin-bottom: 0.5rem;
+    }
+
+    .success-message p {
+      color: #475569;
+      font-size: 0.92rem;
+    }
+
+    .success-message button {
+      margin-top: 1.5rem;
+      padding: 0.6rem 1.5rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      font-family: inherit;
+      color: #00b4d8;
+      background: transparent;
+      border: 1.5px solid #00b4d8;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .success-message button:hover {
+      background: #00b4d8;
+      color: #ffffff;
+    }
+
+    .footer {
+      margin-top: auto;
+      padding: 1.5rem 1rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: #94a3b8;
+      width: 100%;
+      border-top: 1px solid #e2e8f0;
+      background: #f8fafc;
+    }
+
+    .footer a {
+      color: #0891b2;
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      color: #00b4d8;
+      text-decoration: underline;
+    }
+
+    @media (max-width: 480px) {
+      .card { padding: 1.5rem 1.25rem; }
+      .header h1 { font-size: 1.15rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <img src="assets/logo.svg" alt="Just Travel">
+      <h1>Publicar Tutorial</h1>
+    </div>
+
+    <div class="card">
+      <p class="intro">
+        Preencha os campos abaixo para publicar um novo tutorial.
+        O PDF será armazenado no Google Drive e ficará disponível no Guia Prático.
+      </p>
+
+      <form id="uploadForm" novalidate>
+        <div class="field" id="fieldTitulo">
+          <label for="titulo">Título do tutorial <span class="required">*</span></label>
+          <input type="text" id="titulo" name="titulo" required minlength="5"
+                 placeholder="Ex: Como configurar o Checkout">
+          <span class="error-msg">Informe o título (mínimo 5 caracteres).</span>
+        </div>
+
+        <div class="field" id="fieldDescricao">
+          <label for="descricao">Descrição breve <span class="required">*</span></label>
+          <span class="hint">Resuma em poucas palavras o conteúdo do tutorial (mínimo 20 caracteres).</span>
+          <textarea id="descricao" name="descricao" required minlength="20"
+                    placeholder="Descreva brevemente o que o tutorial aborda..."></textarea>
+          <span class="error-msg">Descreva com pelo menos 20 caracteres.</span>
+        </div>
+
+        <div class="field" id="fieldCategoria">
+          <label for="categoria">Categoria <span class="required">*</span></label>
+          <select id="categoria" name="categoria" required>
+            <option value="" disabled selected>Selecione a categoria</option>
+            <option value="Checkout">Checkout</option>
+            <option value="Hotéis">Hotéis</option>
+            <option value="Whitelabel">Whitelabel</option>
+            <option value="Aéreo">Aéreo</option>
+            <option value="Usuários">Usuários</option>
+            <option value="Relatórios">Relatórios</option>
+            <option value="Financeiro">Financeiro</option>
+            <option value="Ingressos">Ingressos</option>
+            <option value="Outro">Outro</option>
+          </select>
+          <span class="error-msg">Selecione uma categoria.</span>
+
+          <div id="outroContainer">
+            <input type="text" id="outraCategoria" name="outraCategoria"
+                   placeholder="Especifique a categoria">
+          </div>
+        </div>
+
+        <div class="field" id="fieldData">
+          <label for="dataPublicacao">Data de publicação <span class="required">*</span></label>
+          <input type="date" id="dataPublicacao" name="dataPublicacao" required>
+          <span class="error-msg">Informe a data de publicação.</span>
+        </div>
+
+        <div class="field" id="fieldPdf">
+          <label>Arquivo PDF <span class="required">*</span></label>
+          <span class="hint">Selecione o tutorial em PDF (máximo 10 MB).</span>
+          <input type="file" id="pdfFile" name="pdfFile" accept=".pdf" required>
+          <span class="error-msg">Selecione um arquivo PDF válido (máximo 10 MB).</span>
+        </div>
+
+        <div class="actions">
+          <button type="submit" id="btnSubmit">Publicar Tutorial</button>
+        </div>
+      </form>
+
+      <div class="success-message" id="successMsg">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#00b4d8" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M8 12l2.5 2.5L16 9"/>
+        </svg>
+        <h2>Tutorial publicado!</h2>
+        <p>O tutorial foi salvo e já está disponível no Guia Prático.</p>
+        <button type="button" id="btnNovo">Publicar outro tutorial</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <a href="./">Voltar ao Guia Prático</a>
+  </footer>
+
+  <script>
+    // ── CONFIG ──
+    // Replace with your deployed Google Apps Script URL
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxHMUTef19ptL3Rc3yPx5HWbGlL9-gSAqmNgqP9Cy6ymI1ahvsRnFEERwAcdD8fPLg/exec';
+
+    const form        = document.getElementById('uploadForm');
+    const catSelect   = document.getElementById('categoria');
+    const outroCont   = document.getElementById('outroContainer');
+    const successMsg  = document.getElementById('successMsg');
+    const btnNovo     = document.getElementById('btnNovo');
+    const btnSubmit   = document.getElementById('btnSubmit');
+
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('dataPublicacao').value = today;
+
+    catSelect.addEventListener('change', () => {
+      outroCont.style.display = catSelect.value === 'Outro' ? 'block' : 'none';
+    });
+
+    function validateField(fieldId, isValid) {
+      const el = document.getElementById(fieldId);
+      el.classList.toggle('invalid', !isValid);
+      return isValid;
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      let ok = true;
+      const titulo = document.getElementById('titulo');
+      ok = validateField('fieldTitulo', titulo.value.trim().length >= 5) && ok;
+
+      const descricao = document.getElementById('descricao');
+      ok = validateField('fieldDescricao', descricao.value.trim().length >= 20) && ok;
+
+      ok = validateField('fieldCategoria', catSelect.value !== '') && ok;
+
+      const dataPublicacao = document.getElementById('dataPublicacao');
+      ok = validateField('fieldData', dataPublicacao.value !== '') && ok;
+
+      const pdfFile = document.getElementById('pdfFile');
+      const file = pdfFile.files[0];
+      const maxSize = 10 * 1024 * 1024;
+      ok = validateField('fieldPdf', file && file.type === 'application/pdf' && file.size <= maxSize) && ok;
+
+      if (!ok) return;
+
+      btnSubmit.disabled = true;
+      btnSubmit.textContent = 'Publicando...';
+
+      const categoria = catSelect.value === 'Outro'
+        ? (document.getElementById('outraCategoria').value.trim() || 'Outro')
+        : catSelect.value;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const payload = {
+          titulo: titulo.value.trim(),
+          descricao: descricao.value.trim(),
+          categoria: categoria,
+          dataPublicacao: dataPublicacao.value,
+          pdfBase64: reader.result.split(',')[1],
+          pdfName: file.name,
+        };
+
+        if (!APPS_SCRIPT_URL) {
+          setTimeout(() => showSuccess(), 800);
+          return;
+        }
+
+        fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(payload),
+        })
+        .then(() => showSuccess())
+        .catch(() => {
+          alert('Erro ao publicar. Tente novamente.');
+          btnSubmit.disabled = false;
+          btnSubmit.textContent = 'Publicar Tutorial';
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function showSuccess() {
+      form.style.display = 'none';
+      document.querySelector('.intro').style.display = 'none';
+      successMsg.style.display = 'block';
+    }
+
+    btnNovo.addEventListener('click', () => {
+      form.reset();
+      document.getElementById('dataPublicacao').value = today;
+      outroCont.style.display = 'none';
+      form.querySelectorAll('.field').forEach(f => f.classList.remove('invalid'));
+      form.style.display = 'block';
+      document.querySelector('.intro').style.display = 'block';
+      successMsg.style.display = 'none';
+      btnSubmit.disabled = false;
+      btnSubmit.textContent = 'Publicar Tutorial';
+    });
+  </script>
+</body>
+</html>
