@@ -109,6 +109,30 @@
       pointer-events: none;
     }
 
+    .category-select {
+      min-width: 160px;
+      padding: 0.65rem 2.25rem 0.65rem 0.85rem;
+      font-size: 0.92rem;
+      font-family: inherit;
+      color: #0f172a;
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8.825a.5.5 0 0 1-.354-.146l-4-4a.5.5 0 1 1 .708-.708L6 7.617l3.646-3.646a.5.5 0 1 1 .708.708l-4 4A.5.5 0 0 1 6 8.825z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      background-size: 12px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .category-select:focus {
+      outline: none;
+      border-color: #00b4d8;
+      box-shadow: 0 0 0 3px rgba(0, 180, 216, 0.15);
+    }
+
     .date-range-wrapper {
       display: flex;
       align-items: center;
@@ -390,6 +414,10 @@
         flex: 1;
       }
 
+      .category-select {
+        width: 100%;
+      }
+
       .btn-search {
         width: 100%;
         text-align: center;
@@ -431,6 +459,13 @@
           </svg>
           <input type="text" id="searchInput" placeholder="Buscar por palavra-chave...">
         </div>
+        <select id="categoryFilter" class="category-select">
+          <option value="">Todas as categorias</option>
+          <option value="White Label">White Label</option>
+          <option value="Painel Administrativo">Painel Administrativo</option>
+          <option value="Travia">Travia</option>
+          <option value="Checkout">Checkout</option>
+        </select>
         <div class="date-range-wrapper">
           <input type="text" id="dateStart" placeholder="Data inicial" readonly>
           <span class="separator">–</span>
@@ -491,11 +526,12 @@
     let currentPage = 1;
 
     // ── DOM ──
-    const searchInput   = document.getElementById('searchInput');
-    const dateStart     = document.getElementById('dateStart');
-    const dateEnd       = document.getElementById('dateEnd');
-    const btnSearch     = document.getElementById('btnSearch');
-    const btnClear      = document.getElementById('btnClear');
+    const searchInput     = document.getElementById('searchInput');
+    const categoryFilter  = document.getElementById('categoryFilter');
+    const dateStart       = document.getElementById('dateStart');
+    const dateEnd         = document.getElementById('dateEnd');
+    const btnSearch       = document.getElementById('btnSearch');
+    const btnClear        = document.getElementById('btnClear');
     const grid          = document.getElementById('tutorialsGrid');
     const pagination    = document.getElementById('pagination');
     const btnPrev       = document.getElementById('btnPrev');
@@ -628,6 +664,7 @@
     // ── FILTER ──
     function applyFilters() {
       var query = searchInput.value.trim().toLowerCase();
+      var cat   = categoryFilter.value;
       var start = fpStart.selectedDates[0] || null;
       var end   = fpEnd.selectedDates[0]   || null;
 
@@ -636,6 +673,7 @@
           var haystack = (t.titulo + ' ' + t.descricao + ' ' + t.categoria).toLowerCase();
           if (haystack.indexOf(query) === -1) return false;
         }
+        if (cat && t.categoria.toLowerCase() !== cat.toLowerCase()) return false;
         if (start || end) {
           var d = parseDate(t.dataPublicacao);
           if (start && d < start) return false;
@@ -655,6 +693,7 @@
 
     function clearFilters() {
       searchInput.value = '';
+      categoryFilter.value = '';
       fpStart.clear();
       fpEnd.clear();
       filtered = allTutorials.slice();
@@ -664,7 +703,7 @@
     }
 
     function updateClearBtn() {
-      var hasFilter = searchInput.value.trim() || fpStart.selectedDates.length || fpEnd.selectedDates.length;
+      var hasFilter = searchInput.value.trim() || categoryFilter.value || fpStart.selectedDates.length || fpEnd.selectedDates.length;
       btnClear.classList.toggle('visible', !!hasFilter);
     }
 
